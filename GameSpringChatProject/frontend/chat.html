@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <title>Chat - 공개채팅</title>
+  <script src="/socket.io/socket.io.js"></script>
+  <style>
+    body {
+      background-color: #035C91;
+      color: white;
+      font-family: sans-serif;
+      margin: 0;
+    }
+    .nav {
+      display: flex;
+      justify-content: flex-end;
+      background: #003F6B;
+      padding: 10px;
+    }
+    .nav button {
+      background: transparent;
+      border: none;
+      color: white;
+      font-weight: bold;
+      margin-left: 20px;
+      font-size: 24px;
+      cursor: pointer;
+    }
+    .nav .active {
+      background: white;
+      color: black;
+      border-radius: 5px;
+      padding: 5px 15px;
+    }
+    .container {
+      display: flex;
+      padding: 20px;
+    }
+    .chat-box {
+      width: 100%;
+      background: white;
+      color: black;
+      padding: 15px;
+      height: 500px;
+      overflow-y: auto;
+    }
+    .user-list {
+      width: 25%;
+      background: white;
+      color: black;
+      padding: 15px;
+      margin-left: 100px;
+    }
+    .chat-input {
+      padding: 10px;
+      width: 100.5%;
+      font-size: 20px;
+      margin-top: 5px;
+    }
+    .green {
+      color: green;
+      font-weight: bold;
+      font-size: 28px;
+    }
+    .blue {
+      color: blue;
+      font-size: 26px;
+    }
+    .current-user {
+      color: blue;
+      font-size: 24px;
+    }
+  </style>
+</head>
+<body>
+  <div class="nav">
+    <button class="active">Chat</button>
+    <button onclick="window.location.href='/users.html'">Users</button>
+    <button onclick="logout()">Logout</button>
+  </div>
+
+  <div class="container">
+    <div style="width: 60%;">
+      <div id="chat" class="chat-box"></div>
+      <input id="msg" class="chat-input" placeholder="채팅 내용을 입력 후 Enter를 눌러주세요" />
+    </div>
+    <div class="user-list">
+      <div class="blue">현재: <span id="user-count" class="blue">0</span>명</div>
+      <ul id="user-list" style="list-style-type: none; padding-left: 0;"></ul>
+    </div>
+  </div>
+
+  <script>
+    const socket = io('http://localhost:3000');
+    const nickname = sessionStorage.getItem('username') || localStorage.getItem('username');
+    const justLoggedIn = localStorage.getItem('justLoggedIn') === 'true';
+
+    if (!nickname) {
+      alert('로그인이 필요합니다.');
+      window.location.href = '/login.html';
+    }
+
+    if (justLoggedIn) {
+      localStorage.removeItem(`chatLogs_${nickname}`);
+    }
+
+    socket.on('connect', () => {
+      socket.emit('join', { nickname, announce: justLoggedIn });
+      localStorage.removeItem('justLoggedIn');
+    });
+
+    const chat = document.getElementById('chat');
+    const input = document.getElementById('msg');
+    const userList = document.getElementById('user-list');
+    const userCount = document.getElementById('user-count');
+
+    loadPreviousChats();
+
+    socket.on('system message', data => {
+      const msgObj = { type: 'system', user: data.user, text: data.text };
+      appendSystem(msgObj);
+      saveChatToLocal(msgObj);
+    });
+
+    socket.on('chat message', data => {
+      const msgObj = { type: 'chat', user: data.sender, text: data.message };
+      appendMsg(msgObj);
+      saveChatToLocal(msgObj);
+    });
+
+    socket.on('user list', updateUserList);
+
+    input.addEventListener('keydown', e => {
+      if (e.key === 'Enter' && input.value.trim()) {
+        const msgObj = { type: 'chat', sender: nickname, message: input.value };
+        socket.emit('chat message', msgObj);  // ❗ 메시지는 서버로만 전송, append는 하지 않음
+        input.value = '';
+      }
+    });
+
+    function appendMsg(msgObj) {
+      const msgHTML = `<div class="blue">${msgObj.user}: ${msgObj.text}</div>`;
+      chat.insertAdjacentHTML('beforeend', msgHTML);
+      chat.scrollTop = chat.scrollHeight;
+    }
+
+    function appendSystem(msgObj) {
+      const msgHTML = `<div class="green">${msgObj.user}님이 ${msgObj.text}</div>`;
+      chat.insertAdjacentHTML('beforeend', msgHTML);
+      chat.scrollTop = chat.scrollHeight;
+    }
+
+    function updateUserList(users) {
+      userList.innerHTML = users.map(u => {
+        const className = u === nickname ? 'current-user' : 'blue';
+        return `<li class="${className}">${u}</li>`;
+      }).join('');
+      userCount.textContent = users.length;
+    }
+
+    function logout() {
+      socket.emit('manual_logout', nickname);
+      localStorage.removeItem('username');
+      sessionStorage.removeItem('username');
+      window.location.href = '/login.html';
+    }
+
+    function saveChatToLocal(msgObj) {
+      const key = `chatLogs_${nickname}`;
+      const logs = JSON.parse(localStorage.getItem(key) || '[]');
+      logs.push(msgObj);
+      localStorage.setItem(key, JSON.stringify(logs));
+    }
+
+    function loadPreviousChats() {
+      const key = `chatLogs_${nickname}`;
+      const logs = JSON.parse(localStorage.getItem(key) || '[]');
+      logs.forEach(msgObj => {
+        if (msgObj.type === 'system') {
+          appendSystem(msgObj);
+        } else if (msgObj.type === 'chat') {
+          appendMsg(msgObj);
+        }
+      });
+    }
+  </script>
+</body>
+</html>

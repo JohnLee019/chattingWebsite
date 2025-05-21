@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <title>Users 목록</title>
+  <style>
+    body {
+      background-color: #035C91;
+      color: white;
+      font-family: sans-serif;
+      margin: 0;
+      padding: 20px;
+    }
+
+    .nav {
+      display: flex;
+      justify-content: flex-end;
+      background: #003F6B;
+      padding: 10px;
+    }
+
+    .nav button {
+      background: transparent;
+      border: none;
+      color: white;
+      font-size: 24px;
+      margin-left: 20px;
+      cursor: pointer;
+      font-weight: bold;
+    }
+
+    .nav .active {
+      background: white;
+      color: black;
+      border-radius: 5px;
+      padding: 5px 15px;
+    }
+
+    .user-box {
+      background: white;
+      color: #003F6B;
+      padding: 10px 20px;
+      margin-top: 10px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border: 2px solid #003F6B;
+    }
+
+    .user-info {
+      font-size: 22px;
+      display: flex;
+      align-items: center;
+      gap: 60px;
+    }
+
+    .user-id {
+      width: 200px;
+    }
+
+    .user-joined {
+      width: 250px;
+    }
+
+    .dm-button {
+      background-color: #0074D9;
+      border: none;
+      color: yellow;
+      font-weight: bold;
+      padding: 12px 40px;
+      font-size: 22px;
+      border-radius: 5px;
+      cursor: pointer;
+      margin-left: 30px;
+    }
+  </style>
+</head>
+<body>
+  <div class="nav">
+    <button onclick="goToChat()">Chat</button>
+    <button class="active">Users</button>
+    <button onclick="logout()">Logout</button>
+  </div>
+
+  <div id="user-list-container"></div>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script>
+    window.onload = async function () {
+      const myNickname = sessionStorage.getItem('username')?.trim().toLowerCase();
+      console.log('🔥 exclude:', myNickname);
+
+      if (!myNickname) {
+        alert('로그인이 필요합니다.');
+        return;
+      }
+
+      const response = await fetch(`/api/users?exclude=${encodeURIComponent(myNickname)}`);
+      const users = await response.json();
+      const container = document.getElementById('user-list-container');
+
+      container.innerHTML = '';
+      users.forEach(user => {
+        const userBox = document.createElement('div');
+        userBox.className = 'user-box';
+        userBox.innerHTML = `
+          <div class="user-info">
+            <div class="user-id">ID: ${user.id}</div>
+            <div class="user-joined">가입날짜: ${user.joined}</div>
+          </div>
+          <button class="dm-button" onclick="goToDM('${user.id}')">DM</button>
+        `;
+        container.appendChild(userBox);
+      });
+    };
+
+    function goToChat() {
+      window.location.href = '/chat.html';
+    }
+
+    function logout() {
+      const nickname = sessionStorage.getItem('username') || localStorage.getItem('username');
+      const socket = io('http://localhost:3000');
+      socket.emit('manual_logout', nickname);
+
+      localStorage.removeItem('username');
+      sessionStorage.removeItem('username');
+      window.location.href = '/login.html';
+    }
+
+    function goToDM(targetId) {
+      window.location.href = `/dm.html?to=${targetId}`;
+    }
+  </script>
+</body>
+</html>

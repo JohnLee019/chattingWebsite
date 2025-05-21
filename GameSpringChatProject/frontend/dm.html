@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <title>DM 채팅</title>
+  <script src="/socket.io/socket.io.js"></script>
+  <style>
+    body {
+      background-color: #f2f2f2;
+      font-family: sans-serif;
+      margin: 0;
+    }
+
+    .nav {
+      display: flex;
+      justify-content: flex-end;
+      background: #003F6B;
+      padding: 10px;
+    }
+
+    .nav button {
+      background: transparent;
+      border: none;
+      color: white;
+      font-size: 24px;
+      margin-left: 20px;
+      cursor: pointer;
+      font-weight: bold;
+    }
+
+    .nav .active {
+      background: white;
+      color: black;
+      border-radius: 5px;
+      padding: 5px 15px;
+    }
+
+    .container {
+      display: flex;
+      flex-direction: column;
+      height: 80vh;
+      padding: 20px;
+      box-sizing: border-box;
+    }
+
+    .chat-title {
+      color: #003F6B;
+      font-size: 28px;
+      font-weight: bold;
+      margin-bottom: 10px;
+      border-bottom: 2px solid #0074D9;
+      padding-bottom: 5px;
+      width: fit-content;
+    }
+
+    .chat-box {
+      flex: 1;
+      background: white;
+      padding: 20px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      border: 2px solid black;
+      font-size: 22px;
+    }
+
+    .chat-input {
+      padding: 15px;
+      font-size: 28px;
+      border: 1px solid #aaa;
+      border-radius: 5px;
+      margin-top: 15px;
+    }
+
+    .my-message {
+      color: green;
+      text-align: left;
+    }
+
+    .other-message {
+      color: blue;
+      text-align: left;
+    }
+  </style>
+</head>
+<body>
+  <div class="nav">
+    <button onclick="goToChat()">Chat</button>
+    <button onclick="goToUsers()">Users</button>
+    <button class="active">DM</button>
+    <button onclick="logout()">Logout</button>
+  </div>
+
+  <div class="container">
+    <div class="chat-title" id="chat-title"></div>
+    <div id="messages" class="chat-box"></div>
+    <input id="dm-input" class="chat-input" placeholder="채팅 내용을 입력하세요" />
+  </div>
+
+  <script>
+    const socket = io('http://localhost:3000');
+    const myId = sessionStorage.getItem('username') || localStorage.getItem('username');
+    const urlParams = new URLSearchParams(window.location.search);
+    const toId = urlParams.get('to');
+    const room = [myId, toId].sort().join('-');
+
+    if (!myId || !toId) {
+      alert('유효하지 않은 접근입니다.');
+      location.href = '/users.html';
+    }
+
+    document.getElementById('chat-title').textContent = `Direct Message to ${toId}`;
+    socket.emit('join_dm', { room, user: myId });
+
+    const input = document.getElementById('dm-input');
+    const messages = document.getElementById('messages');
+
+    input.addEventListener('keydown', e => {
+      if (e.key === 'Enter' && input.value.trim()) {
+        socket.emit('dm_message', { room, sender: myId, message: input.value });
+        input.value = '';
+      }
+    });
+
+    socket.on('dm_message', ({ sender, message }) => {
+      const className = sender === myId ? 'my-message' : 'other-message';
+      const html = `<div class="${className}"><strong>${sender}</strong>: ${message}</div>`;
+      messages.insertAdjacentHTML('beforeend', html);
+      messages.scrollTop = messages.scrollHeight;
+    });
+
+    function goToChat() {
+      window.location.href = '/chat.html';
+    }
+
+    function goToUsers() {
+      window.location.href = '/users.html';
+    }
+
+    function logout() {
+      const nickname = sessionStorage.getItem('username') || localStorage.getItem('username');
+      const socket = io('http://localhost:3000');
+      socket.emit('manual_logout', nickname);
+
+      localStorage.removeItem('username');
+      sessionStorage.removeItem('username');
+      window.location.href = '/login.html';
+    }
+  </script>
+</body>
+</html>

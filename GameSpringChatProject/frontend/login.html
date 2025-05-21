@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <title>로그인 / 회원가입</title>
+  <style>
+    body {
+      background-color: #035C91;
+      color: white;
+      font-family: sans-serif;
+      text-align: center;
+      padding: 60px;
+    }
+
+    .form-box {
+      background: white;
+      color: black;
+      width: 360px;
+      margin: auto;
+      padding: 30px;
+      border-radius: 12px;
+    }
+
+    input {
+      width: 92%;
+      padding: 16px;
+      margin: 14px 0;
+      font-size: 20px;
+      border: 2px solid #0072bb;
+      text-align: center;
+      border-radius: 6px;
+    }
+
+    input::placeholder {
+      color: #0072bb;
+    }
+
+    button {
+      width: 102%;
+      padding: 18px;
+      font-size: 20px;
+      font-weight: bold;
+      background-color: #0072bb;
+      color: white;
+      border: none;
+      margin-top: 14px;
+      cursor: pointer;
+      border-radius: 6px;
+    }
+
+    h3 {
+      font-size: 30px;
+      margin-bottom: 25px;
+    }
+  </style>
+</head>
+<body>
+  <div id="loginBox" class="form-box">
+    <h3>로그인</h3>
+    <input type="text" id="loginId" placeholder="ID" />
+    <input type="password" id="loginPw" placeholder="Password" />
+    <button onclick="signIn()">Sign in</button>
+    <button onclick="goToSignup()">Sign up</button>
+  </div>
+
+  <div id="signupBox" class="form-box" style="display:none;">
+    <h3>회원가입</h3>
+    <input type="text" id="signupId" placeholder="ID" />
+    <input type="password" id="signupPw" placeholder="Password" />
+    <button onclick="signUp()">Sign up</button>
+  </div>
+
+  <script>
+    function goToSignup() {
+      document.getElementById('loginBox').style.display = 'none';
+      document.getElementById('signupBox').style.display = 'block';
+    }
+
+    function signUp() {
+      const id = document.getElementById('signupId').value;
+      const pw = document.getElementById('signupPw').value;
+
+      fetch('http://localhost:3000/api/signup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username: id, password: pw })
+      })
+      .then(res => res.json())
+      .then(data => {
+        if (data.success) {
+          alert('회원가입 성공!');
+          document.getElementById('signupBox').style.display = 'none';
+          document.getElementById('loginBox').style.display = 'block';
+        } else {
+          alert(data.message || '회원가입 실패');
+        }
+      });
+    }
+
+    function signIn() {
+      const id = document.getElementById('loginId').value;
+      const pw = document.getElementById('loginPw').value;
+
+      fetch('http://localhost:3000/api/signin', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username: id, password: pw })
+      })
+      .then(res => res.json())
+      .then(data => {
+        if (data.success) {
+          localStorage.setItem('username', id);
+          sessionStorage.setItem('username', id);
+          localStorage.setItem('justLoggedIn', 'true');
+          alert('로그인 성공! 채팅방으로 이동합니다.');
+          window.location.href = '/chat.html';
+        } else {
+          alert(data.message || '로그인 실패');
+        }
+      });
+    }
+  </script>
+</body>
+</html>
+
