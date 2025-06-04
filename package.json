@@ -1,0 +1,26 @@
+{
+  "name": "gamespring-chating",
+  "version": "1.0.0",
+  "main": "dist/server.js",
+  "scripts": {
+	"dev": "ts-node-dev --respawn --transpile-only src/server.ts",  
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "keywords": [],
+  "description": "",
+  "dependencies": {
+    "dotenv": "^16.5.0",
+    "express": "^5.1.0",
+    "mysql2": "^3.14.1",
+    "socket.io": "^4.8.1"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.2",
+    "@types/node": "^22.15.18",
+    "@types/socket.io": "^3.0.1",
+    "ts-node-dev": "^2.0.0",
+    "typescript": "^5.8.3"
+  }
+}

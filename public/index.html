@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html>
+<head><title>Chat</title></head>
+<body>
+  <input id="username" placeholder="이름 입력" />
+  <button onclick="join()">입장</button>
+  <ul id="messages"></ul>
+  <input id="m" /><button onclick="send()">전송</button>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script>
+    const socket = io();
+    let joined = false;
+
+    function join() {
+      const name = document.getElementById('username').value;
+      if (name) {
+        socket.emit('join', name);
+        joined = true;
+      }
+    }
+
+    function send() {
+      const msg = document.getElementById('m').value;
+      if (joined && msg) {
+        socket.emit('chat message', msg);
+        document.getElementById('m').value = '';
+      }
+    }
+
+    socket.on('message', msg => {
+      const li = document.createElement('li');
+      li.textContent = msg;
+      document.getElementById('messages').appendChild(li);
+    });
+  </script>
+</body>
+</html>
